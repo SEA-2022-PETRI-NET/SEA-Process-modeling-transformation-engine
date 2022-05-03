@@ -1,6 +1,6 @@
 using ProcessModelingTransformationEngine.API.Model.BPMN;
-using ProcessModelingTransformationEngine.Domain.BPMN;
-using BpmnTask = ProcessModelingTransformationEngine.Domain.BPMN.Task;
+using ProcessModelingTransformationEngine.Domain.Model.BPMN;
+using BpmnTask = ProcessModelingTransformationEngine.Domain.Model.BPMN.Task;
 
 namespace ProcessModelingTransformationEngine.API.Model.Converters;
 

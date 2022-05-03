@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using ProcessModelingTransformationEngine.API.Model.BPMN;
 using ProcessModelingTransformationEngine.Application;
-using ProcessModelingTransformationEngine.Domain.BPMN;
 
 namespace ProcessModelingTransformationEngine.API;
 

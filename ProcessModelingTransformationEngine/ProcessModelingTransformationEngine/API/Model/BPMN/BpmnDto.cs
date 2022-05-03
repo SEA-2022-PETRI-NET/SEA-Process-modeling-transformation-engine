@@ -1,5 +1,3 @@
-using ProcessModelingTransformationEngine.Domain.BPMN;
-
 namespace ProcessModelingTransformationEngine.API.Model.BPMN;
 
 public class BpmnDto
