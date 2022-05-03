@@ -1,6 +1,4 @@
-using System.Diagnostics;
-
-namespace ProcessModelingTransformationEngine.Domain.BPMN;
+namespace ProcessModelingTransformationEngine.Domain.Model.BPMN;
 
 public class Gateway : Node
 {

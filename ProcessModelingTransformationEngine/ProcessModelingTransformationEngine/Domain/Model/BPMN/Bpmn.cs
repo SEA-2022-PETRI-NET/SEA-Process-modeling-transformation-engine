@@ -1,6 +1,6 @@
 using System.Collections;
 
-namespace ProcessModelingTransformationEngine.Domain.BPMN;
+namespace ProcessModelingTransformationEngine.Domain.Model.BPMN;
 
 public class Bpmn : IEnumerable<Node>
 {

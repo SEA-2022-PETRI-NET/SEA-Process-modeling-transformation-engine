@@ -1,4 +1,4 @@
-namespace ProcessModelingTransformationEngine.Domain.BPMN;
+namespace ProcessModelingTransformationEngine.Domain.Model.BPMN;
 
 public class AndGateway : Gateway
 {

@@ -1,5 +1,4 @@
 using ProcessModelingTransformationEngine.API.Model.BPMN;
-using ProcessModelingTransformationEngine.Domain.BPMN;
 
 namespace ProcessModelingTransformationEngine.Application;
 
@@ -117,31 +116,5 @@ public class ValidateBpmnService
             throw new BadHttpRequestException(
                 "All nodes except the end node must have at least one target flow");
         }
-
-        /*Dictionary<int, IBpmnElementDto> idToNode = nodes.ToDictionary(n => n.Id, n => n);
-        var visited = new HashSet<IBpmnElementDto>();
-        var stack = new Stack<IBpmnElementDto>();
-        visited.Add(bpmnDto.StartEvent);
-        stack.Push(bpmnDto.StartEvent);
-        while (stack.Count > 0)
-        {
-            var curNode = stack.Pop();
-            IEnumerable<SequenceFlowDto> targetFlows = 
-                bpmnDto.SequenceFlows.Where(f => f.SourceId == curNode.Id);
-            foreach (var targetFlow in targetFlows)
-            {
-                var target = idToNode[targetFlow.TargetId];
-                bool isLoop = !visited.Add(target);
-                if (isLoop && curNode is not XorGateway)
-                {
-                    throw new BadHttpRequestException("Only XOR gateways can loop back to previous part in the graph");
-                }
-
-                if (!isLoop)
-                {
-                    stack.Push(target);
-                }
-            }
-        }*/
     }
 }
