@@ -21,7 +21,7 @@ public class TransformationController : Controller
         _bpmnToPetriNetTransformerService = bpmnToPetriNetTransformerService;
     }
     
-    [HttpPost("bpmn/petri", Name = "TransformBpmnToPetriNet")]
+    [HttpPost("bpmn-to-petri-net", Name = "TransformBpmnToPetriNet")]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public IActionResult TransformBpmnToPetriNet(BpmnDto bpmnDto)
@@ -30,7 +30,7 @@ public class TransformationController : Controller
         return Ok();
     }
     
-    [HttpPost("petri/dcr", Name = "TransformPetriNetToDcr")]
+    [HttpPost("petri-net-to-dcr", Name = "TransformPetriNetToDcr")]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public IActionResult TransformPetriNetToDcr()
     {
