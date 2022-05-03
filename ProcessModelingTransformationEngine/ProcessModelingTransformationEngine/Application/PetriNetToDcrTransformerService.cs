@@ -1,6 +1,6 @@
 namespace ProcessModelingTransformationEngine.Application;
 
-public class PetriNetToDCRTransformerService
+public class PetriNetToDcrTransformerService
 {
     
 }

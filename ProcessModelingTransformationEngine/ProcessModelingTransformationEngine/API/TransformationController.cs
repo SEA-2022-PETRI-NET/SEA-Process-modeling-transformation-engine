@@ -1,24 +1,40 @@
 using Microsoft.AspNetCore.Mvc;
+using ProcessModelingTransformationEngine.API.Model.BPMN;
 using ProcessModelingTransformationEngine.Application;
+using ProcessModelingTransformationEngine.Domain.BPMN;
 
-namespace ProcessModelingTransformationEngine.Controllers;
+namespace ProcessModelingTransformationEngine.API;
 
 [ApiController]
 [Route("api/v1/[controller]")]
 public class TransformationController : Controller
 {
-    
-    private readonly PetriNetToDCRTransformerService _petriNetToDcrTransformerService;
+    private readonly ValidateBpmnService _validateBpmnService;
+    private readonly PetriNetToDcrTransformerService _petriNetToDcrTransformerService;
+    private readonly BpmnToPetriNetTransformerService _bpmnToPetriNetTransformerService;
 
-    public TransformationController(PetriNetToDCRTransformerService petriNetToDcrTransformerService)
+    public TransformationController(ValidateBpmnService validateBpmnService, 
+        PetriNetToDcrTransformerService petriNetToDcrTransformerService,
+        BpmnToPetriNetTransformerService bpmnToPetriNetTransformerService)
     {
+        _validateBpmnService = validateBpmnService;
         _petriNetToDcrTransformerService = petriNetToDcrTransformerService;
+        _bpmnToPetriNetTransformerService = bpmnToPetriNetTransformerService;
     }
-
     
-    [HttpPost(Name = "TransformPetriNetToDCR")]
+    [HttpPost("bpmn/petri", Name = "TransformBpmnToPetriNet")]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public void TransformPetriNetToDCR()
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public IActionResult TransformBpmnToPetriNet(BpmnDto bpmnDto)
     {
+        _validateBpmnService.Validate(bpmnDto);
+        return Ok();
+    }
+    
+    [HttpPost("petri/dcr", Name = "TransformPetriNetToDcr")]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public IActionResult TransformPetriNetToDcr()
+    {
+        throw new NotImplementedException();
     }
 }
