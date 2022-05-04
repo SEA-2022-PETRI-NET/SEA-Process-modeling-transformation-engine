@@ -9,10 +9,15 @@ public class BpmnDtoToModel
     public Bpmn DtoToModel(BpmnDto bpmnDto)
     {
         var startEvent = new StartEvent(bpmnDto.StartEvent.Id);
-        var endEvent = new EndEvent(bpmnDto.EndEvent.Id);
-        var bpmn = new Bpmn(bpmnDto.Id, bpmnDto.Name, startEvent, endEvent);
+        var bpmn = new Bpmn(bpmnDto.Id, bpmnDto.Name, startEvent);
 
         var idToNode = new Dictionary<int, Node>();
+        idToNode.Add(startEvent.Id, startEvent);
+        foreach (var endEventDto in bpmnDto.EndEvents)
+        {
+            idToNode.Add(endEventDto.Id, 
+                new EndEvent(endEventDto.Id));
+        }
         foreach (var intermediateEventDto in bpmnDto.IntermediateEvents)
         {
             idToNode.Add(intermediateEventDto.Id, 

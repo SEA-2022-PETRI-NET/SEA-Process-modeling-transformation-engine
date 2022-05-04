@@ -7,7 +7,7 @@ public class BpmnDto
     public string Name { get; set; }
     
     public StartEventDto StartEvent { get; set; }
-    public EndEventDto EndEvent { get; set; }
+    public List<EndEventDto> EndEvents { get; set; }
     public List<IntermediateEventDto> IntermediateEvents { get; set; }
     public List<SequenceFlowDto> SequenceFlows { get; set; }
     public List<TaskDto> Tasks { get; set; }

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using ProcessModelingTransformationEngine.API.Model.BPMN;
 using ProcessModelingTransformationEngine.Application;
+using ProcessModelingTransformationEngine.Domain.Model.PetriNet;
 
 namespace ProcessModelingTransformationEngine.API;
 
@@ -23,11 +24,12 @@ public class TransformationController : Controller
     
     [HttpPost("bpmn-to-petri-net", Name = "TransformBpmnToPetriNet")]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PetriNet), StatusCodes.Status200OK)]
     public IActionResult TransformBpmnToPetriNet(BpmnDto bpmnDto)
     {
         _validateBpmnService.Validate(bpmnDto);
-        return Ok();
+        var petriNet = _bpmnToPetriNetTransformerService.Transform(bpmnDto);
+        return Ok(petriNet);
     }
     
     [HttpPost("petri-net-to-dcr", Name = "TransformPetriNetToDcr")]

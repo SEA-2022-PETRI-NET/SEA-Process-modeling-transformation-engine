@@ -9,11 +9,11 @@ public class BpmnModelToDto
     public BpmnDto ModelToDto(Bpmn bpmn)
     {
         var startEventDto = new StartEventDto() { Id = bpmn.StartEvent.Id };
-        var endEventDto = new EndEventDto() { Id = bpmn.EndEvent.Id };
         var bpmnDto = new BpmnDto() 
         { 
             Id = bpmn.Id, Name = bpmn.Name,
-            StartEvent = startEventDto, EndEvent = endEventDto,
+            StartEvent = startEventDto,
+            EndEvents = new List<EndEventDto>(),
             IntermediateEvents = new List<IntermediateEventDto>(),
             SequenceFlows = new List<SequenceFlowDto>(),
             Tasks = new List<TaskDto>(),
@@ -33,8 +33,12 @@ public class BpmnModelToDto
 
             switch (node)
             {
-            case StartEvent or EndEvent:
+            case StartEvent:
                 continue;
+            case EndEvent endEvent:
+                bpmnDto.EndEvents.Add(
+                    new EndEventDto() { Id = endEvent.Id });
+                break;
             case IntermediateEvent intermediateEvent:
                 bpmnDto.IntermediateEvents.Add(
                     new IntermediateEventDto() { Id = intermediateEvent.Id });
