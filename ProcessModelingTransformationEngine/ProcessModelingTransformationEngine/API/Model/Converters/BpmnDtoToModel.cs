@@ -29,11 +29,11 @@ public class BpmnDtoToModel
         }
         foreach (var andGateWayDto in bpmnDto.AndGateways)
         {
-            idToNode.Add(andGateWayDto.Id, new AndGateway(andGateWayDto.Id));
+            idToNode.Add(andGateWayDto.Id, new ParallelGateway(andGateWayDto.Id));
         }
         foreach (var xorGateWayDto in bpmnDto.XorGateways)
         {
-            idToNode.Add(xorGateWayDto.Id, new XorGateway(xorGateWayDto.Id));
+            idToNode.Add(xorGateWayDto.Id, new ExclusiveGateway(xorGateWayDto.Id));
         }
 
         foreach (var flowDto in bpmnDto.SequenceFlows)

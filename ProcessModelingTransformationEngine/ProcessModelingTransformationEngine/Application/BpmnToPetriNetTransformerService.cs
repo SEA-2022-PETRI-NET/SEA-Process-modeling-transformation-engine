@@ -74,7 +74,7 @@ public class BpmnToPetriNetTransformerService
             int curId = oldIdToPlaceId[curNode.Id];
             var place = AddNewPlace(petriNet, curId);
 
-            bool isFork = curNode is XorGateway;
+            bool isFork = curNode is ExclusiveGateway;
             Transition transition = null;
             if (!isFork)
             {
@@ -111,7 +111,7 @@ public class BpmnToPetriNetTransformerService
                     oldIdToPlaceId.Add(targetFlow.Target.Id, newTargetId);
                     frontier.Push(targetFlow.Target);
                 } 
-                // Fork (xor) adds a transition for each possible choice
+                // Fork (exclusive) adds a transition for each possible choice
                 // can only fire one of them
                 if (isFork)
                 {

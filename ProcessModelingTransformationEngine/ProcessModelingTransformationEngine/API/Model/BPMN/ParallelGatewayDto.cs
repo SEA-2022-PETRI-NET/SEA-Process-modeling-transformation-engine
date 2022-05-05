@@ -1,6 +1,6 @@
 namespace ProcessModelingTransformationEngine.API.Model.BPMN;
 
-public class AndGatewayDto : IBpmnElementDto
+public class ParallelGatewayDto : IBpmnElementDto
 {
     public int Id { get; set; }
 }

@@ -11,6 +11,6 @@ public class BpmnDto
     public List<IntermediateEventDto> IntermediateEvents { get; set; }
     public List<SequenceFlowDto> SequenceFlows { get; set; }
     public List<TaskDto> Tasks { get; set; }
-    public List<AndGatewayDto> AndGateways { get; set; }
-    public List<XorGatewayDto> XorGateways { get; set; }
+    public List<ParallelGatewayDto> AndGateways { get; set; }
+    public List<ExclusiveGatewayDto> XorGateways { get; set; }
 }
