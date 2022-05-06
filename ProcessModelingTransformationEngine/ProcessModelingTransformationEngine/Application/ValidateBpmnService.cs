@@ -1,4 +1,5 @@
 using ProcessModelingTransformationEngine.API.Model.BPMN;
+using ProcessModelingTransformationEngine.Domain.Utils;
 
 namespace ProcessModelingTransformationEngine.Application;
 
@@ -15,8 +16,8 @@ public class ValidateBpmnService
             .Concat(bpmnDto.EndEvents)    
             .Concat(bpmnDto.IntermediateEvents)
             .Concat(bpmnDto.Tasks)
-            .Concat(bpmnDto.AndGateways)
-            .Concat(bpmnDto.XorGateways)
+            .Concat(bpmnDto.ParallelGateways)
+            .Concat(bpmnDto.ExclusiveGateways)
             .ToList();
 
         List<int> nodeIds = nodes.Select(n => n.Id).ToList();
@@ -27,6 +28,8 @@ public class ValidateBpmnService
         {
             throw new BadHttpRequestException("ids within a single BPMN should all be unique");
         }
+
+        List<int> endIds = bpmnDto.EndEvents.Select(e => e.Id).ToList();
 
         List<string> nodeNames = new[] { bpmnDto.Name }
             .Concat(bpmnDto.Tasks.Select(n => n.Name))
@@ -67,7 +70,7 @@ public class ValidateBpmnService
                     "is a source flow of the start event");
             }
             
-            if (bpmnDto.EndEvents.Exists(e => e.Id == flow.SourceId))
+            if (endIds.Contains(flow.SourceId))
             {
                 throw new BadHttpRequestException(
                     $"SequenceFlow with id '{flow.Id}' " +
@@ -77,10 +80,10 @@ public class ValidateBpmnService
         
         // All node ids except start id
         List<int> nodeIdsExceptStart = nodeIds
-            .Except(new[] { bpmnDto.StartEvent.Id })
+            .Where(id => id != bpmnDto.StartEvent.Id)
             .ToList();
         List<int> checkTargetIds = bpmnDto.SequenceFlows.Select(f => f.TargetId)
-            .Where(id => nodeIdsExceptStart.Contains(id))
+            .Where(id => id != bpmnDto.StartEvent.Id)
             .ToList();
         if (checkTargetIds.Distinct().Count() != nodeIdsExceptStart.Count)
         {
@@ -88,27 +91,36 @@ public class ValidateBpmnService
                 "All nodes except the start node must have at least one source flow");
         }
 
-        List<int> gatewayIds = bpmnDto.AndGateways.Select(n => n.Id)
-            .Concat(bpmnDto.XorGateways.Select(n => n.Id))
+        List<int> gatewayIds = bpmnDto.ParallelGateways.Select(n => n.Id)
+            .Concat(bpmnDto.ExclusiveGateways.Select(n => n.Id))
             .ToList();
+        List<int> singleSourceIds = nodeIdsExceptStart.ExceptAll(gatewayIds)
+            .ToList();
+        List<int> allSingleSourceTargetIds = bpmnDto.SequenceFlows
+            .Select(f => f.TargetId).ExceptAll(gatewayIds)
+            .ToList();
+        if (allSingleSourceTargetIds.Count != 
+            singleSourceIds.Count)
+        {
+            throw new BadHttpRequestException(
+                "Only gateways can have more than one source flow");
+        }
+
+        List<int> singleTargetIds = nodeIds.ExceptAll(gatewayIds)
+            .ExceptAll(endIds).ToList();
         List<int> allSingleTargetSourceIds = bpmnDto.SequenceFlows
-            .Select(f => f.SourceId).Except(gatewayIds)
+            .Select(f => f.SourceId).ExceptAll(gatewayIds)
             .ToList();
-        if (allSingleTargetSourceIds.Distinct().Count() != 
-            nodeIds.Except(gatewayIds).Except(bpmnDto.EndEvents.Select(e => e.Id)).Count())
+        if (allSingleTargetSourceIds.Count != 
+            singleTargetIds.Count)
         {
             throw new BadHttpRequestException(
                 "Only gateways can have more than one target flow");
         }
         
-        // All node ids except end ids
-        List<int> nodeIdsExceptEnd = nodeIds
-            .Except(bpmnDto.EndEvents.Select(e => e.Id))
-            .ToList();
         List<int> checkSourceIds = bpmnDto.SequenceFlows.Select(f => f.SourceId)
-            .Where(id => nodeIdsExceptEnd.Contains(id))
-            .ToList();
-        if (checkSourceIds.Distinct().Count() != nodeIdsExceptEnd.Count)
+            .ExceptAll(endIds).ToList();
+        if (checkSourceIds.Distinct().Count() != nodeIds.Except(endIds).Count())
         {
             throw new BadHttpRequestException(
                 "All nodes except the end node must have at least one target flow");

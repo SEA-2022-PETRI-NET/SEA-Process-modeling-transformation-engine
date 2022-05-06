@@ -58,29 +58,37 @@ public class BpmnToPetriNetTransformerService
         };
         // Explore BPMN via DFS
         // Each "choice"/"action" in the BPMN is going to be a transition in the petri net
-        // with exactly one input and output place that can contain 0 or 1 tokens to denote
+        // with one input and output place that can contain 0 or 1 tokens to denote
         // what choices there are currently (which transitions can fire)
         // In the initial configuration (before a simulation)
         // only the start transition can be fired (1 token in its input place)
         
-        // Maps old id of an element to the id of its new input place
-        var oldIdToPlaceId = new Dictionary<int, int>(); 
+        // Maps old id of an element to the id of its new place/transition
+        var oldIdToNewId = new Dictionary<int, int>(); 
         var frontier = new Stack<Node>();
-        oldIdToPlaceId.Add(bpmn.StartEvent.Id, GenId());
+        oldIdToNewId.Add(bpmn.StartEvent.Id, GenId());
         frontier.Push(bpmn.StartEvent);
         while (frontier.Count > 0)
         {
             Node curNode = frontier.Pop();
-            int curId = oldIdToPlaceId[curNode.Id];
-            var place = AddNewPlace(petriNet, curId);
+            int curId = oldIdToNewId[curNode.Id];
+            Place place = null;
+            if (curNode is not ParallelGateway)
+            {
+                place = AddNewPlace(petriNet, curId);
+            }
 
             bool isFork = curNode is ExclusiveGateway;
             Transition transition = null;
             if (!isFork)
             {
                 // After non-fork we can continue to all outgoing nodes
-                transition = AddNewTransition(petriNet, GenId());
-                Connect(petriNet, curId, transition.Id);
+                transition = AddNewTransition(petriNet, 
+                    place == null ? curId : GenId());
+                if (place != null)
+                {
+                    Connect(petriNet, curId, transition.Id);   
+                }
             }
             
             if (curNode is StartEvent)
@@ -92,8 +100,8 @@ public class BpmnToPetriNetTransformerService
             {
                 transition.Name = "end";
                 // End event has no outgoing flows
-                var place2 = AddNewPlace(petriNet, GenId());
-                Connect(petriNet, transition.Id, place2.Id);
+                //var place2 = AddNewPlace(petriNet, GenId());
+                //Connect(petriNet, transition.Id, place2.Id);
             }
             else if (curNode is BpmnTask task)
             {
@@ -103,21 +111,31 @@ public class BpmnToPetriNetTransformerService
             foreach (var targetFlow in curNode.GetTargetFlows())
             {
                 int newTargetId;
-                // Else means targetFlow loops back to already visited node
-                // and reference the existing id
-                if (!oldIdToPlaceId.TryGetValue(targetFlow.Target.Id, out newTargetId))
+                // Else means target has already been visited (more than 1 input)
+                // so reference the existing id instead of creating new one
+                if (!oldIdToNewId.TryGetValue(targetFlow.Target.Id, out newTargetId))
                 {
                     newTargetId = GenId();
-                    oldIdToPlaceId.Add(targetFlow.Target.Id, newTargetId);
+                    oldIdToNewId.Add(targetFlow.Target.Id, newTargetId);
                     frontier.Push(targetFlow.Target);
                 } 
-                // Fork (exclusive) adds a transition for each possible choice
-                // can only fire one of them
-                if (isFork)
+                if (targetFlow.Target is ParallelGateway)
                 {
-                    transition = AddNewTransition(petriNet, GenId());
+                    var outPlace = AddNewPlace(petriNet, GenId());
+                    Connect(petriNet, transition.Id, outPlace.Id);
+                    Connect(petriNet, outPlace.Id, newTargetId);
+                } 
+                else
+                {
+                    // Fork (exclusive) adds a transition for each possible choice
+                    // can only fire one of them
+                    if (isFork)
+                    {
+                        transition = AddNewTransition(petriNet, GenId());
+                        Connect(petriNet, curId, transition.Id);
+                    }
+                    Connect(petriNet, transition.Id, newTargetId);
                 }
-                Connect(petriNet, transition.Id, newTargetId);
             }
         }
         return petriNet;

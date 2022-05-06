@@ -27,11 +27,11 @@ public class BpmnDtoToModel
         {
             idToNode.Add(taskDto.Id, new BpmnTask(taskDto.Id, taskDto.Name));
         }
-        foreach (var andGateWayDto in bpmnDto.AndGateways)
+        foreach (var andGateWayDto in bpmnDto.ParallelGateways)
         {
             idToNode.Add(andGateWayDto.Id, new ParallelGateway(andGateWayDto.Id));
         }
-        foreach (var xorGateWayDto in bpmnDto.XorGateways)
+        foreach (var xorGateWayDto in bpmnDto.ExclusiveGateways)
         {
             idToNode.Add(xorGateWayDto.Id, new ExclusiveGateway(xorGateWayDto.Id));
         }

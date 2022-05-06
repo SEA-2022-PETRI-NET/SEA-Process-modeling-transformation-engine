@@ -17,8 +17,8 @@ public class BpmnModelToDto
             IntermediateEvents = new List<IntermediateEventDto>(),
             SequenceFlows = new List<SequenceFlowDto>(),
             Tasks = new List<TaskDto>(),
-            AndGateways = new List<ParallelGatewayDto>(),
-            XorGateways = new List<ExclusiveGatewayDto>()
+            ParallelGateways = new List<ParallelGatewayDto>(),
+            ExclusiveGateways = new List<ExclusiveGatewayDto>()
         };
         foreach (var node in bpmn)
         {
@@ -47,10 +47,10 @@ public class BpmnModelToDto
                 bpmnDto.Tasks.Add(new TaskDto() { Id = task.Id, Name = task.Name });
                 break;
             case ParallelGateway andGateway:
-                bpmnDto.AndGateways.Add(new ParallelGatewayDto() { Id = andGateway.Id });
+                bpmnDto.ParallelGateways.Add(new ParallelGatewayDto() { Id = andGateway.Id });
                 break;
             case ExclusiveGateway xorGateway:
-                bpmnDto.XorGateways.Add(new ExclusiveGatewayDto() { Id = xorGateway.Id });
+                bpmnDto.ExclusiveGateways.Add(new ExclusiveGatewayDto() { Id = xorGateway.Id });
                 break;
             default:
                 throw new NotSupportedException($"Unknown node type {node.GetType()}");
