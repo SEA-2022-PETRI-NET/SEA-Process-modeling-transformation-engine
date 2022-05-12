@@ -80,7 +80,11 @@ public class BpmnToPetriNetTransformerService
 
             bool isFork = curNode is ExclusiveGateway;
             Transition transition = null;
-            if (!isFork)
+            if (isFork)
+            {
+                place.Name = "exclusive" + place.Id;
+            }
+            else
             {
                 // After non-fork we can continue to all outgoing nodes
                 transition = AddNewTransition(petriNet, 
@@ -89,11 +93,16 @@ public class BpmnToPetriNetTransformerService
                 {
                     Connect(petriNet, curId, transition.Id);   
                 }
+
+                if (curNode is ParallelGateway)
+                {
+                    transition.Name = "parallel" + transition.Id;
+                }
             }
             
             if (curNode is StartEvent)
             {
-                transition.Name = "start";
+                place.Name = "start";
                 place.NumberOfTokens = 1;
             }
             else if (curNode is EndEvent)
@@ -119,6 +128,13 @@ public class BpmnToPetriNetTransformerService
                     oldIdToNewId.Add(targetFlow.Target.Id, newTargetId);
                     frontier.Push(targetFlow.Target);
                 } 
+                // Fork (exclusive) adds a transition for each possible choice
+                // can only fire one of them
+                if (isFork)
+                {
+                    transition = AddNewTransition(petriNet, GenId());
+                    Connect(petriNet, curId, transition.Id);
+                }
                 if (targetFlow.Target is ParallelGateway)
                 {
                     var outPlace = AddNewPlace(petriNet, GenId());
@@ -127,13 +143,6 @@ public class BpmnToPetriNetTransformerService
                 } 
                 else
                 {
-                    // Fork (exclusive) adds a transition for each possible choice
-                    // can only fire one of them
-                    if (isFork)
-                    {
-                        transition = AddNewTransition(petriNet, GenId());
-                        Connect(petriNet, curId, transition.Id);
-                    }
                     Connect(petriNet, transition.Id, newTargetId);
                 }
             }
