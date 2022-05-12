@@ -25,10 +25,98 @@ namespace ProcessModelingTransformationEngine.Tests;
 public class BpmnToPetriNetTest
 {
     private int curId = 0;
+    private BpmnDto curBpmnDto;
+    private Dictionary<int, object> curIdToObject;
+    private PetriNet curPetriNetDto;
     
     private int GenId()
     {
         return curId++;
+    }
+
+    private PetriNet CreatePetriNetDto()
+    {
+        var petriNetDto = new PetriNet()
+        {
+            Id = GenId(), Name = "PetriNet",
+            Places = new List<Place>(),
+            Transitions = new List<Transition>(),
+            Arcs = new List<Arc>()
+        };
+        return petriNetDto;
+    }
+
+    private T AssertCast<T>(object obj)
+    {
+        Assert.IsType<T>(obj);
+        return (T)obj;
+    }
+
+    private Transition AssertTransition(int id)
+    {
+        return AssertCast<Transition>(curIdToObject[id]);
+    }
+
+    private Place AssertPlace(int id)
+    {
+        var place = AssertCast<Place>(curIdToObject[id]);
+        Assert.Equal(place.Name == "start" ? 1 : 0, place.NumberOfTokens);
+        return place;
+    }
+
+    private int AssertStart(int id)
+    {
+        var place = AssertPlace(id);
+        Assert.StartsWith("start", place.Name);
+        int transId = OutgoingIds(curPetriNetDto, place.Id, 1).First();
+        var trans = AssertTransition(transId);
+        return OutgoingIds(curPetriNetDto, trans.Id, 1).First();
+    }
+    
+    private void AssertEnd(int id)
+    {
+        var place = AssertPlace(id);
+        int transId = OutgoingIds(curPetriNetDto, place.Id, 1).First();
+        var trans = AssertTransition(transId);
+        Assert.StartsWith("end", trans.Name);
+        OutgoingIds(curPetriNetDto, trans.Id, 0);
+    }
+    
+    private int AssertTask(int id)
+    {
+        var place = AssertPlace(id);
+        int transId = OutgoingIds(curPetriNetDto, place.Id, 1).First();
+        var trans = AssertTransition(transId);
+        Assert.StartsWith("task", trans.Name);
+        return OutgoingIds(curPetriNetDto, trans.Id, 1).First();
+    }
+    
+    private int[] AssertParallel(int id, int expectedNumOutgoing, 
+        out Transition parallelTrans)
+    {
+        var place = AssertPlace(id);
+        int transId = OutgoingIds(curPetriNetDto, place.Id, 1).First();
+        parallelTrans = AssertTransition(transId);
+        Assert.StartsWith("parallel", parallelTrans.Name);
+        return OutgoingIds(curPetriNetDto, parallelTrans.Id, 
+            expectedNumOutgoing).ToArray();
+    }
+    
+    private int[] AssertExclusive(int id, int expectedNumOutgoing, 
+        out Place exclusivePlace)
+    {
+        exclusivePlace = AssertPlace(id);
+        Assert.StartsWith("exclusive", exclusivePlace.Name);
+        List<int> transIds = OutgoingIds(curPetriNetDto, exclusivePlace.Id, 
+            expectedNumOutgoing);
+        List<int> placeIds = new List<int>(expectedNumOutgoing);
+        foreach (int transId in transIds)
+        {
+            AssertTransition(transId);
+            placeIds.Add(OutgoingIds(curPetriNetDto, transId, 1).First());
+        }
+
+        return placeIds.ToArray();
     }
 
     private Dictionary<int, object> IdToNode(PetriNet petriNetDto)
@@ -45,57 +133,6 @@ public class BpmnToPetriNetTest
         }
 
         return idToNode;
-    }
-
-    private T AssertCast<T>(object obj)
-    {
-        Assert.IsType<T>(obj);
-        return (T)obj;
-    }
-
-    private Transition AssertTransition(object node)
-    {
-        return AssertCast<Transition>(node);
-    }
-
-    private Place AssertPlace(object node)
-    {
-        var place = AssertCast<Place>(node);
-        Assert.Equal(place.Name == "start" ? 1 : 0, place.NumberOfTokens);
-        return place;
-    }
-
-    // Assert a chain of ...Transition - Place - Transition... chainlength
-    // TStart is type of start node and TEnd is type of final node
-    private TEnd AssertNodeChain<TStart, TEnd>(PetriNet petriNetDto, 
-        Dictionary<int, object> idToNode, int fromId, int chainLength)
-    {
-        var nodeType = typeof(TStart);
-        object outgoingNode = idToNode[fromId];
-        for (int i = 0; i < chainLength; i++)
-        {
-            if (nodeType == typeof(Place))
-            {
-                fromId = AssertPlace(outgoingNode).Id;
-                nodeType = typeof(Transition);
-            }
-            else if (nodeType == typeof(Transition))
-            {
-                fromId = AssertTransition(outgoingNode).Id;
-                nodeType = typeof(Place);
-            } 
-            else
-            {
-                throw new ArgumentException("Invalid petri net node type " + nodeType);
-            }
-            if (i != chainLength - 1)
-            {
-                outgoingNode = 
-                    OutgoingNodes(petriNetDto, idToNode, fromId, 1).First();
-            }
-        }
-
-        return (TEnd)outgoingNode;
     }
 
     private Place FindStartPlace(PetriNet petriNetDto)
@@ -254,12 +291,12 @@ public class BpmnToPetriNetTest
         var bpmnDto = CreateBpmnDto(numEndEvents: 1, numTasks: 1);
         Connect(bpmnDto, bpmnDto.StartEvent.Id, bpmnDto.Tasks[0].Id);
         Connect(bpmnDto, bpmnDto.Tasks[0].Id, bpmnDto.EndEvents.First().Id);
-        PetriNet petriNetDto = await CallAndDeserializeBpmnToPetriNet(bpmnDto);
-        GetPetriNetInfo(petriNetDto, out var idToNode, out var startPlace);
-        var endTrans = AssertNodeChain<Place, Transition>(
-            petriNetDto, idToNode, startPlace.Id, 2 + 2 + 2);
-        Assert.StartsWith("end", endTrans.Name);
-        OutgoingIds(petriNetDto, endTrans.Id, 0);
+        
+        curPetriNetDto = await CallAndDeserializeBpmnToPetriNet(bpmnDto);
+        GetPetriNetInfo(curPetriNetDto, out curIdToObject, out var startPlace);
+        int id = AssertStart(startPlace.Id);
+        id = AssertTask(id);
+        AssertEnd(id);
     }
     
     [Fact]
@@ -273,23 +310,19 @@ public class BpmnToPetriNetTest
         Connect(bpmnDto, taskIds, bpmnDto.ParallelGateways[1].Id);
         Connect(bpmnDto, bpmnDto.ParallelGateways[1].Id, bpmnDto.EndEvents.First().Id);
         
-        PetriNet petriNetDto = await CallAndDeserializeBpmnToPetriNet(bpmnDto);
-        GetPetriNetInfo(petriNetDto, out var idToNode, out var startPlace);
-        var forkTrans = AssertNodeChain<Place, Transition>(
-            petriNetDto, idToNode, startPlace.Id, 2 + 2);
-        var forkOutgoingIds = OutgoingIds(petriNetDto, forkTrans.Id, 3);
-        var joinTrans = AssertNodeChain<Place, Transition>(
-            petriNetDto, idToNode, forkOutgoingIds[0], 4);
-        var joinTransTemp = AssertNodeChain<Place, Transition>(
-            petriNetDto, idToNode, forkOutgoingIds[1], 4);
+        curPetriNetDto = await CallAndDeserializeBpmnToPetriNet(bpmnDto);
+        GetPetriNetInfo(curPetriNetDto, out curIdToObject, out var startPlace);
+        int id = AssertStart(startPlace.Id);
+        int[] forkOutIds = AssertParallel(id, 3, out var forkTrans);
+        id = AssertTask(forkOutIds[0]);
+        AssertParallel(id, 1, out var joinTrans);
+        id = AssertTask(forkOutIds[1]);
+        AssertParallel(id, 1, out var joinTransTemp);
         Assert.Equal(joinTrans, joinTransTemp);
-        joinTransTemp = AssertNodeChain<Place, Transition>(
-            petriNetDto, idToNode, forkOutgoingIds[2], 4);
+        id = AssertTask(forkOutIds[2]);
+        id = AssertParallel(id, 1, out joinTransTemp).First();
         Assert.Equal(joinTrans, joinTransTemp);
-        var endTrans = AssertNodeChain<Transition, Transition>(petriNetDto,
-            idToNode, joinTrans.Id, 1 + 2);
-        Assert.StartsWith("end", endTrans.Name);
-        OutgoingIds(petriNetDto, endTrans.Id, 0);
+        AssertEnd(id);
     }
     
     [Fact]
@@ -305,24 +338,18 @@ public class BpmnToPetriNetTest
             bpmnDto.ParallelGateways[1].Id);
         Connect(bpmnDto, bpmnDto.ParallelGateways[1].Id, bpmnDto.EndEvents[1].Id);
         
-        PetriNet petriNetDto = await CallAndDeserializeBpmnToPetriNet(bpmnDto);
-        GetPetriNetInfo(petriNetDto, out var idToNode, out var startPlace);
-        var forkTrans = AssertNodeChain<Place, Transition>(
-            petriNetDto, idToNode, startPlace.Id, 2 + 2);
-        var forkOutgoingIds = OutgoingIds(petriNetDto, forkTrans.Id, 3);
-        var endTrans1 = AssertNodeChain<Place, Transition>(
-            petriNetDto, idToNode, forkOutgoingIds[0], 4);
-        Assert.StartsWith("end", endTrans1.Name);
-        OutgoingIds(petriNetDto, endTrans1.Id, 0);
-        var joinTrans = AssertNodeChain<Place, Transition>(
-            petriNetDto, idToNode, forkOutgoingIds[1], 4);
-        var joinTransTemp = AssertNodeChain<Place, Transition>(
-            petriNetDto, idToNode, forkOutgoingIds[2], 4);
+        curPetriNetDto = await CallAndDeserializeBpmnToPetriNet(bpmnDto);
+        GetPetriNetInfo(curPetriNetDto, out curIdToObject, out var startPlace);
+        int id = AssertStart(startPlace.Id);
+        int[] forkOutIds = AssertParallel(id, 3, out var forkTrans);
+        id = AssertTask(forkOutIds[0]);
+        AssertEnd(id);
+        id = AssertTask(forkOutIds[1]);
+        AssertParallel(id, 1, out var joinTrans);
+        id = AssertTask(forkOutIds[2]);
+        id = AssertParallel(id, 1, out var joinTransTemp).First();
         Assert.Equal(joinTrans, joinTransTemp);
-        var endTrans2 = AssertNodeChain<Transition, Transition>(petriNetDto,
-            idToNode, joinTrans.Id, 1 + 2);
-        Assert.StartsWith("end", endTrans2.Name);
-        OutgoingIds(petriNetDto, endTrans2.Id, 0);
+        AssertEnd(id);
     }
     
     [Fact]
@@ -336,23 +363,19 @@ public class BpmnToPetriNetTest
         Connect(bpmnDto, taskIds, bpmnDto.ExclusiveGateways[1].Id);
         Connect(bpmnDto, bpmnDto.ExclusiveGateways[1].Id, bpmnDto.EndEvents.First().Id);
         
-        PetriNet petriNetDto = await CallAndDeserializeBpmnToPetriNet(bpmnDto);
-        GetPetriNetInfo(petriNetDto, out var idToNode, out var startPlace);
-        var forkPlace = AssertNodeChain<Place, Place>(
-            petriNetDto, idToNode, startPlace.Id, 2 + 1);
-        var forkOutgoingIds = OutgoingIds(petriNetDto, forkPlace.Id, 3);
-        var joinPlace = AssertNodeChain<Transition, Place>(
-            petriNetDto, idToNode, forkOutgoingIds[0], 4);
-        var joinPlaceTemp = AssertNodeChain<Transition, Place>(
-            petriNetDto, idToNode, forkOutgoingIds[1], 4);
+        curPetriNetDto = await CallAndDeserializeBpmnToPetriNet(bpmnDto);
+        GetPetriNetInfo(curPetriNetDto, out curIdToObject, out var startPlace);
+        int id = AssertStart(startPlace.Id);
+        int[] forkOutIds = AssertExclusive(id, 3, out var forkPlace);
+        id = AssertTask(forkOutIds[0]);
+        AssertExclusive(id, 1, out var joinPlace);
+        id = AssertTask(forkOutIds[1]);
+        AssertExclusive(id, 1, out var joinPlaceTemp);
         Assert.Equal(joinPlace, joinPlaceTemp);
-        joinPlaceTemp = AssertNodeChain<Transition, Place>(
-            petriNetDto, idToNode, forkOutgoingIds[2], 4);
+        id = AssertTask(forkOutIds[2]);
+        id = AssertExclusive(id, 1, out joinPlaceTemp).First();
         Assert.Equal(joinPlace, joinPlaceTemp);
-        var endTrans = AssertNodeChain<Place, Transition>(petriNetDto,
-            idToNode, joinPlace.Id, 2 + 2);
-        Assert.StartsWith("end", endTrans.Name);
-        OutgoingIds(petriNetDto, endTrans.Id, 0);
+        AssertEnd(id);
     }
     
     [Fact]
@@ -367,20 +390,16 @@ public class BpmnToPetriNetTest
         Connect(bpmnDto, bpmnDto.ExclusiveGateways[1].Id, 
             new[] { bpmnDto.ExclusiveGateways[0].Id, bpmnDto.EndEvents.First().Id });
         
-        PetriNet petriNetDto = await CallAndDeserializeBpmnToPetriNet(bpmnDto);
-        GetPetriNetInfo(petriNetDto, out var idToNode, out var startPlace);
-        var forkPlace = AssertNodeChain<Place, Place>(
-            petriNetDto, idToNode, startPlace.Id, 2 + 1);
-        var joinPlace = AssertNodeChain<Place, Place>(
-            petriNetDto, idToNode, forkPlace.Id, 2 + 2 + 2 + 1);
-        var joinOutgoingIds = OutgoingIds(petriNetDto, joinPlace.Id, 2);
-        var forkPlaceTemp = AssertNodeChain<Transition, Place>(
-            petriNetDto, idToNode, joinOutgoingIds[0], 2);
+        curPetriNetDto = await CallAndDeserializeBpmnToPetriNet(bpmnDto);
+        GetPetriNetInfo(curPetriNetDto, out curIdToObject, out var startPlace);
+        int id = AssertStart(startPlace.Id);
+        id = AssertExclusive(id, 1, out var forkPlace).First();
+        id = AssertTask(id);
+        id = AssertTask(id);
+        int[] joinOutIds = AssertExclusive(id, 2, out var joinPlace);
+        AssertExclusive(joinOutIds[0], 1, out var forkPlaceTemp);
         Assert.Equal(forkPlace, forkPlaceTemp);
-        var endTrans = AssertNodeChain<Transition, Transition>(petriNetDto,
-            idToNode, joinOutgoingIds[1], 1 + 2);
-        Assert.StartsWith("end", endTrans.Name);
-        OutgoingIds(petriNetDto, endTrans.Id, 0);
+        AssertEnd(joinOutIds[1]);
     }
     
     [Fact]
@@ -395,25 +414,19 @@ public class BpmnToPetriNetTest
         Connect(bpmnDto, taskIds, bpmnDto.ParallelGateways[1].Id);
         Connect(bpmnDto, bpmnDto.ParallelGateways[1].Id, bpmnDto.ExclusiveGateways[1].Id);
         Connect(bpmnDto, bpmnDto.ExclusiveGateways[1].Id, bpmnDto.EndEvents.First().Id);
-
-        PetriNet petriNetDto = await CallAndDeserializeBpmnToPetriNet(bpmnDto);
-        GetPetriNetInfo(petriNetDto, out var idToNode, out var startPlace);
-        var xorForkPlace = AssertNodeChain<Place, Place>(
-            petriNetDto, idToNode, startPlace.Id, 2 + 1);
-        var andForkTrans = AssertNodeChain<Place, Transition>(
-            petriNetDto, idToNode, xorForkPlace.Id, 2 + 2);
-        var andForkOutgoingIds = OutgoingIds(petriNetDto, andForkTrans.Id, 2);
-        var andJoinTrans = AssertNodeChain<Place, Transition>(
-            petriNetDto, idToNode, andForkOutgoingIds[0], 4);
-        var andJoinTransTemp = AssertNodeChain<Place, Transition>(
-            petriNetDto, idToNode, andForkOutgoingIds[1], 4);
+        
+        curPetriNetDto = await CallAndDeserializeBpmnToPetriNet(bpmnDto);
+        GetPetriNetInfo(curPetriNetDto, out curIdToObject, out var startPlace);
+        int id = AssertStart(startPlace.Id);
+        id = AssertExclusive(id, 1, out var xorForkPlace).First();
+        int[] andForkOutIds = AssertParallel(id, 2, out var forkTrans);
+        id = AssertTask(andForkOutIds[0]);
+        AssertParallel(id, 1, out var andJoinTrans);
+        id = AssertTask(andForkOutIds[1]);
+        id = AssertParallel(id, 1, out var andJoinTransTemp).First();
         Assert.Equal(andJoinTrans, andJoinTransTemp);
-        var xorJoinPlace = AssertNodeChain<Transition, Place>(
-            petriNetDto, idToNode, andJoinTrans.Id, 1 + 1);
-        var endTrans = AssertNodeChain<Place, Transition>(petriNetDto,
-            idToNode, xorJoinPlace.Id, 2 + 2);
-        Assert.StartsWith("end", endTrans.Name);
-        OutgoingIds(petriNetDto, endTrans.Id, 0);
+        id = AssertExclusive(id, 1, out var xorJoinPlace).First();
+        AssertEnd(id);
     }
 
     [Fact]
@@ -430,31 +443,17 @@ public class BpmnToPetriNetTest
             new[] { bpmnDto.ParallelGateways[0].Id, bpmnDto.ParallelGateways[1].Id });
         Connect(bpmnDto, bpmnDto.ParallelGateways[1].Id, bpmnDto.EndEvents[1].Id);
         
-        PetriNet petriNetDto = await CallAndDeserializeBpmnToPetriNet(bpmnDto);
-        GetPetriNetInfo(petriNetDto, out var idToNode, out var startPlace);
-        var andForkTrans = AssertNodeChain<Place, Transition>(
-            petriNetDto, idToNode, startPlace.Id, 2 + 2);
-        var andForkOutgoingIds = OutgoingIds(petriNetDto, andForkTrans.Id, 2);
-        var endTrans1 = AssertNodeChain<Place, Transition>(
-            petriNetDto, idToNode, andForkOutgoingIds[0], 2);
-        Assert.StartsWith("end", endTrans1.Name);
-        OutgoingIds(petriNetDto, endTrans1.Id, 0);
-        var xorForkPlace = AssertNodeChain<Place, Place>(
-            petriNetDto, idToNode, andForkOutgoingIds[1], 1);
-        Assert.StartsWith("exclusive", xorForkPlace.Name);
-        var xorJoinPlace = AssertNodeChain<Place, Place>(
-            petriNetDto, idToNode, xorForkPlace.Id, 2 + 2 + 1);
-        Assert.StartsWith("exclusive", xorJoinPlace.Name);
-        var xorJoinOutgoingIds = OutgoingIds(petriNetDto, xorJoinPlace.Id, 2);
-        var andForkTransTemp = AssertNodeChain<Transition, Transition>(
-            petriNetDto, idToNode, xorJoinOutgoingIds[0], 3);
+        curPetriNetDto = await CallAndDeserializeBpmnToPetriNet(bpmnDto);
+        GetPetriNetInfo(curPetriNetDto, out curIdToObject, out var startPlace);
+        int id = AssertStart(startPlace.Id);
+        int[] andForkOutIds = AssertParallel(id, 2, out var andForkTrans);
+        AssertEnd(andForkOutIds[0]);
+        id = AssertExclusive(andForkOutIds[1], 1, out var xorForkPlace).First();
+        id = AssertTask(id);
+        int[] xorJoinOutIds = AssertExclusive(id, 2, out var xorJoinPlace);
+        AssertParallel(xorJoinOutIds[0], 2, out var andForkTransTemp);
         Assert.Equal(andForkTrans, andForkTransTemp);
-        var andJoinTrans = AssertNodeChain<Transition, Transition>(
-            petriNetDto, idToNode, xorJoinOutgoingIds[1], 1 + 2);
-        Assert.StartsWith("parallel", andJoinTrans.Name);
-        var endTrans2 = AssertNodeChain<Transition, Transition>(petriNetDto,
-            idToNode, andJoinTrans.Id, 1 + 2);
-        Assert.StartsWith("end", endTrans2.Name);
-        OutgoingIds(petriNetDto, endTrans2.Id, 0);
+        id = AssertParallel(xorJoinOutIds[1], 1, out var andJoinTrans).First();
+        AssertEnd(id);
     }
 }
