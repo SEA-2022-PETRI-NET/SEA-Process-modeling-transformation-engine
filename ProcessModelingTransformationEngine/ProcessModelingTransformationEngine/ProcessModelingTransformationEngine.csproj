@@ -15,4 +15,8 @@
       <Folder Include="Domain\Model" />
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\..\SEA-Petri-net-model-engine\PetriNetEngine\PetriNetEngine\PetriNetEngine.csproj" />
+    </ItemGroup>
+
 </Project>
