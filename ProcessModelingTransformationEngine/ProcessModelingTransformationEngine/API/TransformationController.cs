@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using ProcessModelingTransformationEngine.API.Model.BPMN;
 using ProcessModelingTransformationEngine.Application;
+using PetriNetEngine.Domain.Model;
 
 namespace ProcessModelingTransformationEngine.API;
 
@@ -32,7 +33,7 @@ public class TransformationController : Controller
     
     [HttpPost("petri-net-to-dcr", Name = "TransformPetriNetToDcr")]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public IActionResult TransformPetriNetToDcr()
+    public IActionResult TransformPetriNetToDcr(PetriNet petriNetDto)
     {
         throw new NotImplementedException();
     }
