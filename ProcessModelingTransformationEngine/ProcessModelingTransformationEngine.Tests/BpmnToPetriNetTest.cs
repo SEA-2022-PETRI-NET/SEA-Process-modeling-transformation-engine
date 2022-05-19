@@ -29,6 +29,7 @@ public class BpmnToPetriNetTest
     private Dictionary<int, object> curIdToObject;
     private PetriNet curPetriNetDto;
     
+    #region PetriUtils
     private int GenId()
     {
         return curId++;
@@ -158,7 +159,17 @@ public class BpmnToPetriNetTest
         return OutgoingIds(petriNetDto, sourceId, expectedCount)
             .Select(targetId => idToNode[targetId]).ToList();
     }
-
+    
+    private void GetPetriNetInfo(PetriNet petriNetDto, 
+        out Dictionary<int, object> idToNode, out Place startPlace)
+    {
+        idToNode = IdToNode(petriNetDto);
+        startPlace = FindStartPlace(petriNetDto);
+        Assert.Equal(1, startPlace.NumberOfTokens);
+    }
+    #endregion
+    
+    #region BpmnUtils
     private BpmnDto CreateBpmnDto(int numEndEvents = 1, int numTasks = 0, 
         int numParallelGateways = 0, int numExclusiveGateways = 0)
     {
@@ -256,7 +267,9 @@ public class BpmnToPetriNetTest
 
         return flows;
     }
+    #endregion
 
+    #region HttpUtils
     private async Task<HttpResponseMessage> CallBpmnToPetriNet(BpmnDto bpmnDto)
     {
         await using var application = new WebApplicationFactory<Program>();
@@ -276,15 +289,9 @@ public class BpmnToPetriNetTest
         Assert.NotNull(petriNetDto);
         return petriNetDto;
     }
+    #endregion
 
-    private void GetPetriNetInfo(PetriNet petriNetDto, 
-        out Dictionary<int, object> idToNode, out Place startPlace)
-    {
-        idToNode = IdToNode(petriNetDto);
-        startPlace = FindStartPlace(petriNetDto);
-        Assert.Equal(1, startPlace.NumberOfTokens);
-    }
-    
+    #region PositiveTests
     [Fact]
     public async Task SimplePositiveTest()
     {
@@ -456,4 +463,174 @@ public class BpmnToPetriNetTest
         id = AssertParallel(xorJoinOutIds[1], 1, out var andJoinTrans).First();
         AssertEnd(id);
     }
+    #endregion
+    
+    #region NegativeTests
+    [Fact]
+    public async Task UnconnectedNegativeTest()
+    {
+        var bpmnDto = CreateBpmnDto(numEndEvents: 1);
+
+        HttpResponseMessage response = await CallBpmnToPetriNet(bpmnDto);
+        Assert.False(response.IsSuccessStatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+    
+    [Fact]
+    public async Task NoStartEventNegativeTest()
+    {
+        var bpmnDto = CreateBpmnDto(numEndEvents: 1, numTasks: 1);
+        Connect(bpmnDto, bpmnDto.Tasks[0].Id, bpmnDto.EndEvents.First().Id);
+
+        HttpResponseMessage response = await CallBpmnToPetriNet(bpmnDto);
+        Assert.False(response.IsSuccessStatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+    
+    [Fact]
+    public async Task NoEndEventNegativeTest()
+    {
+        var bpmnDto = CreateBpmnDto(numEndEvents: 0, numTasks: 1);
+        Connect(bpmnDto, bpmnDto.StartEvent.Id, bpmnDto.Tasks[0].Id);
+
+        HttpResponseMessage response = await CallBpmnToPetriNet(bpmnDto);
+        Assert.False(response.IsSuccessStatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+    
+    [Fact]
+    public async Task EndEventOutgoingNegativeTest()
+    {
+        var bpmnDto = CreateBpmnDto(numEndEvents: 2, numTasks: 1);
+        Connect(bpmnDto, bpmnDto.StartEvent.Id, bpmnDto.Tasks[0].Id);
+        Connect(bpmnDto, bpmnDto.Tasks[0].Id, bpmnDto.EndEvents[0].Id);
+        Connect(bpmnDto, bpmnDto.EndEvents[0].Id, bpmnDto.EndEvents[1].Id);
+
+        HttpResponseMessage response = await CallBpmnToPetriNet(bpmnDto);
+        Assert.False(response.IsSuccessStatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+    
+    [Fact]
+    public async Task SelfLoopNegativeTest()
+    {
+        var bpmnDto = CreateBpmnDto(numEndEvents: 1, numExclusiveGateways: 1);
+        Connect(bpmnDto, bpmnDto.StartEvent.Id, bpmnDto.ExclusiveGateways[0].Id);
+        Connect(bpmnDto, bpmnDto.ExclusiveGateways[0].Id, bpmnDto.ExclusiveGateways[0].Id);
+        Connect(bpmnDto, bpmnDto.ExclusiveGateways[0].Id, bpmnDto.EndEvents.First().Id);
+
+        HttpResponseMessage response = await CallBpmnToPetriNet(bpmnDto);
+        Assert.False(response.IsSuccessStatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+    
+    [Fact]
+    public async Task MultiSourceNonGatewayNegativeTest()
+    {
+        var bpmnDto = CreateBpmnDto(numEndEvents: 1, numTasks: 3, 
+            numParallelGateways: 1);
+        Connect(bpmnDto, bpmnDto.StartEvent.Id, bpmnDto.ParallelGateways[0].Id);
+        int[] taskIds = bpmnDto.Tasks.Take(new Range(0, 2)).Select(t => t.Id).ToArray();
+        Connect(bpmnDto, bpmnDto.ParallelGateways[0].Id, taskIds);
+        Connect(bpmnDto, taskIds, bpmnDto.Tasks[2].Id);
+        Connect(bpmnDto, bpmnDto.Tasks[2].Id, bpmnDto.EndEvents.First().Id);
+        
+        HttpResponseMessage response = await CallBpmnToPetriNet(bpmnDto);
+        Assert.False(response.IsSuccessStatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+    
+    [Fact]
+    public async Task MultiTargetNonGatewayNegativeTest()
+    {
+        var bpmnDto = CreateBpmnDto(numEndEvents: 1, numTasks: 3, 
+            numParallelGateways: 1);
+        Connect(bpmnDto, bpmnDto.StartEvent.Id, bpmnDto.Tasks[2].Id);
+        int[] taskIds = bpmnDto.Tasks.Take(new Range(0, 2)).Select(t => t.Id).ToArray();
+        Connect(bpmnDto, bpmnDto.Tasks[2].Id, taskIds);
+        Connect(bpmnDto, taskIds, bpmnDto.ParallelGateways[0].Id);
+        Connect(bpmnDto, bpmnDto.ParallelGateways[0].Id, bpmnDto.EndEvents.First().Id);
+        
+        HttpResponseMessage response = await CallBpmnToPetriNet(bpmnDto);
+        Assert.False(response.IsSuccessStatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+    
+    [Fact]
+    public async Task ParallelNoOutgoingNegativeTest()
+    {
+        var bpmnDto = CreateBpmnDto(numEndEvents: 1, numTasks: 1, 
+            numParallelGateways: 2);
+        Connect(bpmnDto, bpmnDto.StartEvent.Id, bpmnDto.ParallelGateways[0].Id);
+        Connect(bpmnDto, bpmnDto.ParallelGateways[0].Id, bpmnDto.Tasks[0].Id);
+        Connect(bpmnDto, bpmnDto.ParallelGateways[0].Id, bpmnDto.ParallelGateways[1].Id);
+        Connect(bpmnDto, bpmnDto.Tasks[0].Id, bpmnDto.EndEvents[0].Id);
+        
+        HttpResponseMessage response = await CallBpmnToPetriNet(bpmnDto);
+        Assert.False(response.IsSuccessStatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+    
+    [Fact]
+    public async Task ParallelMissingEndNegativeTest()
+    {
+        var bpmnDto = CreateBpmnDto(numEndEvents: 1, numTasks: 3, 
+            numParallelGateways: 2);
+        Connect(bpmnDto, bpmnDto.StartEvent.Id, bpmnDto.ParallelGateways[0].Id);
+        int[] taskIds = bpmnDto.Tasks.Take(new Range(0, 3)).Select(t => t.Id).ToArray();
+        Connect(bpmnDto, bpmnDto.ParallelGateways[0].Id, taskIds);
+        Connect(bpmnDto, taskIds.Take(new Range(1, 3)).ToArray(), 
+            bpmnDto.ParallelGateways[1].Id);
+        Connect(bpmnDto, bpmnDto.ParallelGateways[1].Id, bpmnDto.EndEvents[0].Id);
+        
+        HttpResponseMessage response = await CallBpmnToPetriNet(bpmnDto);
+        Assert.False(response.IsSuccessStatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+    
+    [Fact]
+    public async Task DuplicateIdNegativeTest()
+    {
+        var bpmnDto = CreateBpmnDto(numEndEvents: 1, numTasks: 1);
+        Connect(bpmnDto, bpmnDto.StartEvent.Id, bpmnDto.Tasks[0].Id);
+        Connect(bpmnDto, bpmnDto.Tasks[0].Id, bpmnDto.EndEvents.First().Id);
+        bpmnDto.SequenceFlows[1].Id = bpmnDto.SequenceFlows[0].Id;
+        
+        HttpResponseMessage response = await CallBpmnToPetriNet(bpmnDto);
+        Assert.False(response.IsSuccessStatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+    
+    [Fact]
+    public async Task DuplicateNameNegativeTest()
+    {
+        var bpmnDto = CreateBpmnDto(numEndEvents: 1, numTasks: 2);
+        bpmnDto.Tasks[1].Name = bpmnDto.Tasks[0].Name;
+        Connect(bpmnDto, bpmnDto.StartEvent.Id, bpmnDto.Tasks[0].Id);
+        Connect(bpmnDto, bpmnDto.Tasks[0].Id, bpmnDto.Tasks[1].Id);
+        Connect(bpmnDto, bpmnDto.Tasks[1].Id, bpmnDto.EndEvents.First().Id);
+        
+        HttpResponseMessage response = await CallBpmnToPetriNet(bpmnDto);
+        Assert.False(response.IsSuccessStatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+    
+    [Fact]
+    public async Task DuplicateSequenceFlowTest()
+    {
+        var bpmnDto = CreateBpmnDto(numEndEvents: 1, numTasks: 2, 
+            numExclusiveGateways: 2);
+        Connect(bpmnDto, bpmnDto.StartEvent.Id, bpmnDto.ExclusiveGateways[0].Id);
+        Connect(bpmnDto, bpmnDto.ExclusiveGateways[0].Id, bpmnDto.Tasks[0].Id);
+        Connect(bpmnDto, bpmnDto.Tasks[0].Id, bpmnDto.Tasks[1].Id);
+        Connect(bpmnDto, bpmnDto.Tasks[1].Id, bpmnDto.ExclusiveGateways[1].Id);
+        Connect(bpmnDto, bpmnDto.ExclusiveGateways[1].Id, 
+            new[] { bpmnDto.ExclusiveGateways[0].Id, bpmnDto.ExclusiveGateways[0].Id,
+                bpmnDto.EndEvents.First().Id });
+        
+        HttpResponseMessage response = await CallBpmnToPetriNet(bpmnDto);
+        Assert.False(response.IsSuccessStatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+    #endregion
 }

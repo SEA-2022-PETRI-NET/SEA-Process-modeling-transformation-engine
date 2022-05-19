@@ -40,6 +40,15 @@ public class ValidateBpmnService
             throw new BadHttpRequestException("Names within a single BPMN should all be unique");
         }
 
+        List<SequenceFlowDto> uniqueFlows = bpmnDto.SequenceFlows
+                .DistinctBy(f => new { f.SourceId, f.TargetId })
+                .ToList();
+        if (uniqueFlows.Count != bpmnDto.SequenceFlows.Count)
+        {
+            throw new BadHttpRequestException(
+                "BPMN cannot contain two sequence flows with same source and target");
+        }
+        
         foreach (var flow in bpmnDto.SequenceFlows)
         {
             if (!nodeIds.Contains(flow.SourceId))
@@ -90,6 +99,14 @@ public class ValidateBpmnService
             throw new BadHttpRequestException(
                 "All nodes except the start node must have at least one source flow");
         }
+        
+        List<int> checkSourceIds = bpmnDto.SequenceFlows.Select(f => f.SourceId)
+            .ExceptAll(endIds).ToList();
+        if (checkSourceIds.Distinct().Count() != nodeIds.Except(endIds).Count())
+        {
+            throw new BadHttpRequestException(
+                "All nodes except the end node must have at least one target flow");
+        }
 
         List<int> gatewayIds = bpmnDto.ParallelGateways.Select(n => n.Id)
             .Concat(bpmnDto.ExclusiveGateways.Select(n => n.Id))
@@ -116,14 +133,6 @@ public class ValidateBpmnService
         {
             throw new BadHttpRequestException(
                 "Only gateways can have more than one target flow");
-        }
-        
-        List<int> checkSourceIds = bpmnDto.SequenceFlows.Select(f => f.SourceId)
-            .ExceptAll(endIds).ToList();
-        if (checkSourceIds.Distinct().Count() != nodeIds.Except(endIds).Count())
-        {
-            throw new BadHttpRequestException(
-                "All nodes except the end node must have at least one target flow");
         }
     }
 }
