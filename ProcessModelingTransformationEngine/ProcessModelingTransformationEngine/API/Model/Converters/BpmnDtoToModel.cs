@@ -9,10 +9,15 @@ public class BpmnDtoToModel
     public Bpmn DtoToModel(BpmnDto bpmnDto)
     {
         var startEvent = new StartEvent(bpmnDto.StartEvent.Id);
-        var endEvent = new EndEvent(bpmnDto.EndEvent.Id);
-        var bpmn = new Bpmn(bpmnDto.Id, bpmnDto.Name, startEvent, endEvent);
+        var bpmn = new Bpmn(bpmnDto.Id, bpmnDto.Name, startEvent);
 
         var idToNode = new Dictionary<int, Node>();
+        idToNode.Add(startEvent.Id, startEvent);
+        foreach (var endEventDto in bpmnDto.EndEvents)
+        {
+            idToNode.Add(endEventDto.Id, 
+                new EndEvent(endEventDto.Id));
+        }
         foreach (var intermediateEventDto in bpmnDto.IntermediateEvents)
         {
             idToNode.Add(intermediateEventDto.Id, 
@@ -22,13 +27,13 @@ public class BpmnDtoToModel
         {
             idToNode.Add(taskDto.Id, new BpmnTask(taskDto.Id, taskDto.Name));
         }
-        foreach (var andGateWayDto in bpmnDto.AndGateways)
+        foreach (var andGateWayDto in bpmnDto.ParallelGateways)
         {
-            idToNode.Add(andGateWayDto.Id, new AndGateway(andGateWayDto.Id));
+            idToNode.Add(andGateWayDto.Id, new ParallelGateway(andGateWayDto.Id));
         }
-        foreach (var xorGateWayDto in bpmnDto.XorGateways)
+        foreach (var xorGateWayDto in bpmnDto.ExclusiveGateways)
         {
-            idToNode.Add(xorGateWayDto.Id, new XorGateway(xorGateWayDto.Id));
+            idToNode.Add(xorGateWayDto.Id, new ExclusiveGateway(xorGateWayDto.Id));
         }
 
         foreach (var flowDto in bpmnDto.SequenceFlows)

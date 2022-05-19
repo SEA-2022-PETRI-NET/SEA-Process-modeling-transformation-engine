@@ -9,16 +9,16 @@ public class BpmnModelToDto
     public BpmnDto ModelToDto(Bpmn bpmn)
     {
         var startEventDto = new StartEventDto() { Id = bpmn.StartEvent.Id };
-        var endEventDto = new EndEventDto() { Id = bpmn.EndEvent.Id };
         var bpmnDto = new BpmnDto() 
         { 
             Id = bpmn.Id, Name = bpmn.Name,
-            StartEvent = startEventDto, EndEvent = endEventDto,
+            StartEvent = startEventDto,
+            EndEvents = new List<EndEventDto>(),
             IntermediateEvents = new List<IntermediateEventDto>(),
             SequenceFlows = new List<SequenceFlowDto>(),
             Tasks = new List<TaskDto>(),
-            AndGateways = new List<AndGatewayDto>(),
-            XorGateways = new List<XorGatewayDto>()
+            ParallelGateways = new List<ParallelGatewayDto>(),
+            ExclusiveGateways = new List<ExclusiveGatewayDto>()
         };
         foreach (var node in bpmn)
         {
@@ -33,8 +33,12 @@ public class BpmnModelToDto
 
             switch (node)
             {
-            case StartEvent or EndEvent:
+            case StartEvent:
                 continue;
+            case EndEvent endEvent:
+                bpmnDto.EndEvents.Add(
+                    new EndEventDto() { Id = endEvent.Id });
+                break;
             case IntermediateEvent intermediateEvent:
                 bpmnDto.IntermediateEvents.Add(
                     new IntermediateEventDto() { Id = intermediateEvent.Id });
@@ -42,11 +46,11 @@ public class BpmnModelToDto
             case BpmnTask task:
                 bpmnDto.Tasks.Add(new TaskDto() { Id = task.Id, Name = task.Name });
                 break;
-            case AndGateway andGateway:
-                bpmnDto.AndGateways.Add(new AndGatewayDto() { Id = andGateway.Id });
+            case ParallelGateway andGateway:
+                bpmnDto.ParallelGateways.Add(new ParallelGatewayDto() { Id = andGateway.Id });
                 break;
-            case XorGateway xorGateway:
-                bpmnDto.XorGateways.Add(new XorGatewayDto() { Id = xorGateway.Id });
+            case ExclusiveGateway xorGateway:
+                bpmnDto.ExclusiveGateways.Add(new ExclusiveGatewayDto() { Id = xorGateway.Id });
                 break;
             default:
                 throw new NotSupportedException($"Unknown node type {node.GetType()}");

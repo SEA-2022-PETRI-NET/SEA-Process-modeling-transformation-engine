@@ -2,8 +2,6 @@ namespace ProcessModelingTransformationEngine.Domain.Model.BPMN;
 
 public class StartEvent : Event
 {
-    public override bool IsMultiSource => false;
-    
     public StartEvent(int id) : base(id)
     { }
 

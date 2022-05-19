@@ -1,6 +1,6 @@
 namespace ProcessModelingTransformationEngine.API.Model.BPMN;
 
-public class XorGatewayDto : IBpmnElementDto
+public class ExclusiveGatewayDto : IBpmnElementDto
 {
     public int Id { get; set; }
 }

@@ -9,14 +9,12 @@ public class Bpmn : IEnumerable<Node>
     public string Name { get; set; }
     
     public StartEvent StartEvent { get; set; }
-    public EndEvent EndEvent { get; set; }
 
-    public Bpmn(int id, string name, StartEvent startEvent, EndEvent endEvent)
+    public Bpmn(int id, string name, StartEvent startEvent)
     {
         this.Id = id;
         this.Name = name;
         this.StartEvent = startEvent;
-        this.EndEvent = endEvent;
     }
 
     public void AddFlow(SequenceFlow flow)
@@ -28,18 +26,18 @@ public class Bpmn : IEnumerable<Node>
     public IEnumerator<Node> GetEnumerator()
     {
         var visited = new HashSet<Node>();
-        var stack = new Stack<Node>();
+        var frontier = new Stack<Node>();
         visited.Add(StartEvent);
-        stack.Push(StartEvent);
-        while (stack.Count > 0)
+        frontier.Push(StartEvent);
+        while (frontier.Count > 0)
         {
-            var curNode = stack.Pop();
+            var curNode = frontier.Pop();
             yield return curNode;
             foreach (var targetFlow in curNode.GetTargetFlows())
             {
                 if (visited.Add(targetFlow.Target))
                 {
-                    stack.Push(targetFlow.Target);
+                    frontier.Push(targetFlow.Target);
                 }
             }
         }

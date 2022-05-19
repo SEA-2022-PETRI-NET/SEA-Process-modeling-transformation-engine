@@ -5,7 +5,7 @@ namespace ProcessModelingTransformationEngine.Domain.Model.BPMN;
 public class Node : IBpmnElement
 {
     public int Id { get; set; }
-    public virtual bool IsMultiSource => true;
+    public virtual bool IsMultiSource => false;
     public virtual bool IsMultiTarget => false;
 
     protected List<SequenceFlow> sourceFlows, targetFlows;
@@ -29,7 +29,7 @@ public class Node : IBpmnElement
     
     public virtual void AddSourceFlow(SequenceFlow flow)
     {
-        Debug.Assert(!IsMultiSource || sourceFlows.Count == 0);
+        Debug.Assert(IsMultiSource || sourceFlows.Count == 0);
         Debug.Assert(flow.Target == this);
         Debug.Assert(sourceFlows.All(f => f.Source != flow.Source));
         sourceFlows.Add(flow);
@@ -37,7 +37,7 @@ public class Node : IBpmnElement
 
     public virtual void AddTargetFlow(SequenceFlow flow)
     {
-        Debug.Assert(!IsMultiTarget || targetFlows.Count == 0);
+        Debug.Assert(IsMultiTarget || targetFlows.Count == 0);
         Debug.Assert(flow.Source == this);
         Debug.Assert(targetFlows.All(f => f.Target != flow.Target));
         targetFlows.Add(flow);
