@@ -1,0 +1,3 @@
+[submodule "SEA-Models"]
+	path = SEA-Models
+	url = git@github.com:SEA-2022-PETRI-NET/SEA-Models.git

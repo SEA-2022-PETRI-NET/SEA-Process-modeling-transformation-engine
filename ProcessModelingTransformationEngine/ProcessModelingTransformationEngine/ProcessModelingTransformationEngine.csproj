@@ -15,4 +15,8 @@
       <Folder Include="Domain\Model" />
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\..\SEA-Models\SEA-Models.csproj" />
+    </ItemGroup>
+
 </Project>
