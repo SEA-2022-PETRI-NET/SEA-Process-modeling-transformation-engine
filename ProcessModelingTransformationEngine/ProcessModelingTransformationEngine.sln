@@ -1,11 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# 
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProcessModelingTransformationEngine", "ProcessModelingTransformationEngine\ProcessModelingTransformationEngine.csproj", "{0D64D658-E04C-401A-A0C6-35CBD4614729}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProcessModelingTransformationEngine.Tests", "ProcessModelingTransformationEngine.Tests\ProcessModelingTransformationEngine.Tests.csproj", "{EAF670DD-DDDC-4B47-9404-1F8ECF948B33}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SEA-Models", "..\SEA-Models\SEA-Models.csproj", "{4C44E609-B445-44B8-B18E-752BF4F02FA5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,9 +18,5 @@ Global
 		{EAF670DD-DDDC-4B47-9404-1F8ECF948B33}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EAF670DD-DDDC-4B47-9404-1F8ECF948B33}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EAF670DD-DDDC-4B47-9404-1F8ECF948B33}.Release|Any CPU.Build.0 = Release|Any CPU
-		{4C44E609-B445-44B8-B18E-752BF4F02FA5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{4C44E609-B445-44B8-B18E-752BF4F02FA5}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{4C44E609-B445-44B8-B18E-752BF4F02FA5}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{4C44E609-B445-44B8-B18E-752BF4F02FA5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
