@@ -1,10 +1,9 @@
 using System.Diagnostics;
-using ProcessModelingTransformationEngine.API.Model.BPMN;
+using SEA_Models.Domain.Model.BPMN;
 using ProcessModelingTransformationEngine.API.Model.Converters;
-using ProcessModelingTransformationEngine.Domain.Model.BPMN;
-using ProcessModelingTransformationEngine.Domain.Model.PetriNet;
+using SEA_Models.Domain.Model.PetriNet;
 
-using BpmnTask = ProcessModelingTransformationEngine.Domain.Model.BPMN.Task;
+using BpmnTask = SEA_Models.Domain.Model.BPMN.Task;
 
 namespace ProcessModelingTransformationEngine.Application;
 

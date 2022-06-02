@@ -11,14 +11,13 @@ using System.Text.Json.Nodes;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Newtonsoft.Json;
-using ProcessModelingTransformationEngine.API.Model.BPMN;
+using SEA_Models.Domain.Model.BPMN;
 using ProcessModelingTransformationEngine.Application;
-using ProcessModelingTransformationEngine.Domain.Model.BPMN;
-using ProcessModelingTransformationEngine.Domain.Model.PetriNet;
+using SEA_Models.Domain.Model.PetriNet;
 using Xunit;
 
 using Task = System.Threading.Tasks.Task;
-using BpmnTask = ProcessModelingTransformationEngine.Domain.Model.BPMN.Task;
+using BpmnTask = SEA_Models.Domain.Model.BPMN.Task;
 
 namespace ProcessModelingTransformationEngine.Tests;
 
