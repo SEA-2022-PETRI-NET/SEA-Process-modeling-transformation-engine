@@ -1,4 +1,4 @@
-using ProcessModelingTransformationEngine.API.Model.BPMN;
+using SEA_Models.Domain.Model.BPMN;
 using ProcessModelingTransformationEngine.Domain.Utils;
 
 namespace ProcessModelingTransformationEngine.Application;

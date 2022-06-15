@@ -1,4 +1,4 @@
-namespace ProcessModelingTransformationEngine.API.Model.BPMN;
+namespace SEA_Models.Domain.Model.BPMN;
 
 public class SequenceFlowDto : IBpmnElementDto
 {
