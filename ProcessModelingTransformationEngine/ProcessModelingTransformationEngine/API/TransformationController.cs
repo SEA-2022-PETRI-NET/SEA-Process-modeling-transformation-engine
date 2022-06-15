@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using ProcessModelingTransformationEngine.API.Model.BPMN;
 using SEA_Models.Domain.Model.BPMN;
 using ProcessModelingTransformationEngine.Application;
 using SEA_Models.PetriNet;
