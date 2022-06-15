@@ -10,15 +10,15 @@ namespace ProcessModelingTransformationEngine.API;
 public class TransformationController : Controller
 {
     private readonly ValidateBpmnService _validateBpmnService;
-    private readonly PetriNetToDcrTransformerService _petriNetToDcrTransformerService;
+    private readonly DcrToPetriNetTransformerService _dcrToPetriNetTransformerService;
     private readonly BpmnToPetriNetTransformerService _bpmnToPetriNetTransformerService;
 
     public TransformationController(ValidateBpmnService validateBpmnService, 
-        PetriNetToDcrTransformerService petriNetToDcrTransformerService,
+        DcrToPetriNetTransformerService dcrToPetriNetTransformerService,
         BpmnToPetriNetTransformerService bpmnToPetriNetTransformerService)
     {
         _validateBpmnService = validateBpmnService;
-        _petriNetToDcrTransformerService = petriNetToDcrTransformerService;
+        _dcrToPetriNetTransformerService = dcrToPetriNetTransformerService;
         _bpmnToPetriNetTransformerService = bpmnToPetriNetTransformerService;
     }
     
@@ -32,9 +32,9 @@ public class TransformationController : Controller
         return Ok(petriNet);
     }
     
-    [HttpPost("petri-net-to-dcr", Name = "TransformPetriNetToDcr")]
+    [HttpPost("dcr-to-petri-net", Name = "TransformDcrToPetriNet")]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public IActionResult TransformPetriNetToDcr()
+    public IActionResult TransformDcrToPetriNet()
     {
         throw new NotImplementedException();
     }
