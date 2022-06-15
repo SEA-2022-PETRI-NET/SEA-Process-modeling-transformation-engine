@@ -5,7 +5,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddScoped<ValidateBpmnService, ValidateBpmnService>();
-builder.Services.AddScoped<PetriNetToDcrTransformerService, PetriNetToDcrTransformerService>();
+builder.Services.AddScoped<DcrToPetriNetTransformerService, DcrToPetriNetTransformerService>();
 builder.Services.AddScoped<BpmnToPetriNetTransformerService, BpmnToPetriNetTransformerService>();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
