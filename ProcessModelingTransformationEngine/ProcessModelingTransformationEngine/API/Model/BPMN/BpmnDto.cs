@@ -1,4 +1,6 @@
-namespace SEA_Models.Domain.Model.BPMN;
+using SEA_Models.Domain.Model.BPMN;
+
+namespace ProcessModelingTransformationEngine.API.Model.BPMN;
 
 public class BpmnDto
 {

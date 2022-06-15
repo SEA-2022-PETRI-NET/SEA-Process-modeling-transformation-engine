@@ -11,6 +11,7 @@ using System.Text.Json.Nodes;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Newtonsoft.Json;
+using ProcessModelingTransformationEngine.API.Model.BPMN;
 using SEA_Models.Domain.Model.BPMN;
 using ProcessModelingTransformationEngine.Application;
 using SEA_Models.PetriNet;
