@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using SEA_Models.Domain.Model.BPMN;
 using ProcessModelingTransformationEngine.Application;
-using SEA_Models.Domain.Model.PetriNet;
+using SEA_Models.PetriNet;
 
 namespace ProcessModelingTransformationEngine.API;
 
