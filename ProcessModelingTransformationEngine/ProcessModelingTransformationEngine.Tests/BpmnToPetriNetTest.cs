@@ -69,37 +69,37 @@ public class BpmnToPetriNetTest
     {
         var place = AssertPlace(id);
         Assert.StartsWith("start", place.Name);
-        int transId = OutgoingIds(curPetriNetDto, place.Id, 1).First();
+        int transId = OutgoingIds(curPetriNetDto, place.PlaceId, 1).First();
         var trans = AssertTransition(transId);
-        return OutgoingIds(curPetriNetDto, trans.Id, 1).First();
+        return OutgoingIds(curPetriNetDto, trans.TransitionId, 1).First();
     }
     
     private void AssertEnd(int id)
     {
         var place = AssertPlace(id);
-        int transId = OutgoingIds(curPetriNetDto, place.Id, 1).First();
+        int transId = OutgoingIds(curPetriNetDto, place.PlaceId, 1).First();
         var trans = AssertTransition(transId);
         Assert.StartsWith("end", trans.Name);
-        OutgoingIds(curPetriNetDto, trans.Id, 0);
+        OutgoingIds(curPetriNetDto, trans.TransitionId, 0);
     }
     
     private int AssertTask(int id)
     {
         var place = AssertPlace(id);
-        int transId = OutgoingIds(curPetriNetDto, place.Id, 1).First();
+        int transId = OutgoingIds(curPetriNetDto, place.PlaceId, 1).First();
         var trans = AssertTransition(transId);
         Assert.StartsWith("task", trans.Name);
-        return OutgoingIds(curPetriNetDto, trans.Id, 1).First();
+        return OutgoingIds(curPetriNetDto, trans.TransitionId, 1).First();
     }
     
     private int[] AssertParallel(int id, int expectedNumOutgoing, 
         out Transition parallelTrans)
     {
         var place = AssertPlace(id);
-        int transId = OutgoingIds(curPetriNetDto, place.Id, 1).First();
+        int transId = OutgoingIds(curPetriNetDto, place.PlaceId, 1).First();
         parallelTrans = AssertTransition(transId);
         Assert.StartsWith("parallel", parallelTrans.Name);
-        return OutgoingIds(curPetriNetDto, parallelTrans.Id, 
+        return OutgoingIds(curPetriNetDto, parallelTrans.TransitionId, 
             expectedNumOutgoing).ToArray();
     }
     
@@ -108,7 +108,7 @@ public class BpmnToPetriNetTest
     {
         exclusivePlace = AssertPlace(id);
         Assert.StartsWith("exclusive", exclusivePlace.Name);
-        List<int> transIds = OutgoingIds(curPetriNetDto, exclusivePlace.Id, 
+        List<int> transIds = OutgoingIds(curPetriNetDto, exclusivePlace.PlaceId, 
             expectedNumOutgoing);
         List<int> placeIds = new List<int>(expectedNumOutgoing);
         foreach (int transId in transIds)
@@ -125,12 +125,12 @@ public class BpmnToPetriNetTest
         var idToNode = new Dictionary<int, object>();
         foreach (var place in petriNetDto.Places)
         {
-            idToNode[place.Id] = place;
+            idToNode[place.PlaceId] = place;
         }
 
         foreach (var transition in petriNetDto.Transitions)
         {
-            idToNode[transition.Id] = transition;
+            idToNode[transition.TransitionId] = transition;
         }
 
         return idToNode;
@@ -301,7 +301,7 @@ public class BpmnToPetriNetTest
         
         curPetriNetDto = await CallAndDeserializeBpmnToPetriNet(bpmnDto);
         GetPetriNetInfo(curPetriNetDto, out curIdToObject, out var startPlace);
-        int id = AssertStart(startPlace.Id);
+        int id = AssertStart(startPlace.PlaceId);
         id = AssertTask(id);
         AssertEnd(id);
     }
@@ -319,7 +319,7 @@ public class BpmnToPetriNetTest
         
         curPetriNetDto = await CallAndDeserializeBpmnToPetriNet(bpmnDto);
         GetPetriNetInfo(curPetriNetDto, out curIdToObject, out var startPlace);
-        int id = AssertStart(startPlace.Id);
+        int id = AssertStart(startPlace.PlaceId);
         int[] forkOutIds = AssertParallel(id, 3, out var forkTrans);
         id = AssertTask(forkOutIds[0]);
         AssertParallel(id, 1, out var joinTrans);
@@ -347,7 +347,7 @@ public class BpmnToPetriNetTest
         
         curPetriNetDto = await CallAndDeserializeBpmnToPetriNet(bpmnDto);
         GetPetriNetInfo(curPetriNetDto, out curIdToObject, out var startPlace);
-        int id = AssertStart(startPlace.Id);
+        int id = AssertStart(startPlace.PlaceId);
         int[] forkOutIds = AssertParallel(id, 3, out var forkTrans);
         id = AssertTask(forkOutIds[0]);
         AssertEnd(id);
@@ -372,7 +372,7 @@ public class BpmnToPetriNetTest
         
         curPetriNetDto = await CallAndDeserializeBpmnToPetriNet(bpmnDto);
         GetPetriNetInfo(curPetriNetDto, out curIdToObject, out var startPlace);
-        int id = AssertStart(startPlace.Id);
+        int id = AssertStart(startPlace.PlaceId);
         int[] forkOutIds = AssertExclusive(id, 3, out var forkPlace);
         id = AssertTask(forkOutIds[0]);
         AssertExclusive(id, 1, out var joinPlace);
@@ -399,7 +399,7 @@ public class BpmnToPetriNetTest
         
         curPetriNetDto = await CallAndDeserializeBpmnToPetriNet(bpmnDto);
         GetPetriNetInfo(curPetriNetDto, out curIdToObject, out var startPlace);
-        int id = AssertStart(startPlace.Id);
+        int id = AssertStart(startPlace.PlaceId);
         id = AssertExclusive(id, 1, out var forkPlace).First();
         id = AssertTask(id);
         id = AssertTask(id);
@@ -424,7 +424,7 @@ public class BpmnToPetriNetTest
         
         curPetriNetDto = await CallAndDeserializeBpmnToPetriNet(bpmnDto);
         GetPetriNetInfo(curPetriNetDto, out curIdToObject, out var startPlace);
-        int id = AssertStart(startPlace.Id);
+        int id = AssertStart(startPlace.PlaceId);
         id = AssertExclusive(id, 1, out var xorForkPlace).First();
         int[] andForkOutIds = AssertParallel(id, 2, out var forkTrans);
         id = AssertTask(andForkOutIds[0]);
@@ -452,7 +452,7 @@ public class BpmnToPetriNetTest
         
         curPetriNetDto = await CallAndDeserializeBpmnToPetriNet(bpmnDto);
         GetPetriNetInfo(curPetriNetDto, out curIdToObject, out var startPlace);
-        int id = AssertStart(startPlace.Id);
+        int id = AssertStart(startPlace.PlaceId);
         int[] andForkOutIds = AssertParallel(id, 2, out var andForkTrans);
         AssertEnd(andForkOutIds[0]);
         id = AssertExclusive(andForkOutIds[1], 1, out var xorForkPlace).First();

@@ -34,14 +34,14 @@ public class BpmnToPetriNetTransformerService
 
     private Place AddNewPlace(PetriNet petriNet, int id)
     {
-        var place = new Place() { Id = id, Name = "p" + id, NumberOfTokens = 0 };
+        var place = new Place() { PlaceId = id, Name = "p" + id, NumberOfTokens = 0 };
         petriNet.Places.Add(place);
         return place;
     }
 
     private Transition AddNewTransition(PetriNet petriNet, int id)
     {
-        var transition = new Transition() { Id = id, Name = "t" + id };
+        var transition = new Transition() { TransitionId = id, Name = "t" + id };
         petriNet.Transitions.Add(transition);
         return transition;
     }
@@ -83,7 +83,7 @@ public class BpmnToPetriNetTransformerService
             Transition transition = null;
             if (isFork)
             {
-                place.Name = "exclusive" + place.Id;
+                place.Name = "exclusive" + place.PlaceId;
             }
             else
             {
@@ -92,12 +92,12 @@ public class BpmnToPetriNetTransformerService
                     place == null ? curId : GenId());
                 if (place != null)
                 {
-                    Connect(petriNet, curId, transition.Id);   
+                    Connect(petriNet, curId, transition.TransitionId);   
                 }
 
                 if (curNode is ParallelGateway)
                 {
-                    transition.Name = "parallel" + transition.Id;
+                    transition.Name = "parallel" + transition.TransitionId;
                 }
             }
             
@@ -111,7 +111,7 @@ public class BpmnToPetriNetTransformerService
                 transition.Name = "end";
                 // End event has no outgoing flows
                 //var place2 = AddNewPlace(petriNet, GenId());
-                //Connect(petriNet, transition.Id, place2.Id);
+                //Connect(petriNet, transition.TransitionId, place2.Id);
             }
             else if (curNode is BpmnTask task)
             {
@@ -134,17 +134,17 @@ public class BpmnToPetriNetTransformerService
                 if (isFork)
                 {
                     transition = AddNewTransition(petriNet, GenId());
-                    Connect(petriNet, curId, transition.Id);
+                    Connect(petriNet, curId, transition.TransitionId);
                 }
                 if (targetFlow.Target is ParallelGateway)
                 {
                     var outPlace = AddNewPlace(petriNet, GenId());
-                    Connect(petriNet, transition.Id, outPlace.Id);
-                    Connect(petriNet, outPlace.Id, newTargetId);
+                    Connect(petriNet, transition.TransitionId, outPlace.PlaceId);
+                    Connect(petriNet, outPlace.PlaceId, newTargetId);
                 } 
                 else
                 {
-                    Connect(petriNet, transition.Id, newTargetId);
+                    Connect(petriNet, transition.TransitionId, newTargetId);
                 }
             }
         }
